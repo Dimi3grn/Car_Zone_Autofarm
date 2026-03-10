@@ -1,8 +1,14 @@
--- [[ STEALTH HUB MAIN ]] --
-local _G = _G or {}
+-- [[ STEALTH HUB MAIN V2 ]] --
 _G.AutoFarmRunning = false
 
--- UI Setup
+-- DEBUG LOGGER (Prints hidden errors to F9 Console)
+game:GetService("LogService").MessageOut:Connect(function(Message, Type)
+    if Type == Enum.MessageType.MessageError then
+        print("🚩 SCRIPT ERROR: " .. Message)
+    end
+end)
+
+-- UI Setup (Kept simple as requested)
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Toggle = Instance.new("TextButton")
@@ -32,12 +38,19 @@ Toggle.MouseButton1Click:Connect(function()
         Toggle.Text = "Around The World: ON"
         Toggle.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
         
-        -- FETCH THE FARM SCRIPT FROM GITHUB
+        -- FETCH THE FARM SCRIPT FROM GITHUB SAFELY
         task.spawn(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Dimi3grn/Car_Zone_Autofarm/main/farms/around_the_world.lua"))()
+            local success, err = pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/Dimi3grn/Car_Zone_Autofarm/main/farms/around_the_world.lua"))()
+            end)
+            if not success then 
+                warn("🚩 GITHUB LOADER ERROR: " .. tostring(err)) 
+            end
         end)
     else
         Toggle.Text = "Around The World: OFF"
         Toggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
     end
 end)
+
+print("✅ Stealth Hub Loaded. Open F9 for logs.")
