@@ -1,4 +1,4 @@
--- [[ FIXED AROUND THE WORLD MODULE V2 ]] --
+-- [[ FIXED AROUND THE WORLD MODULE V3 ]] --
 local Player = game.Players.LocalPlayer
 local Character = Player.Character
 local platformPos = Vector3.new(-1127.35, 1.5, -4202.63)
@@ -36,18 +36,29 @@ while _G.AutoFarmRunning do
         driveSeat.AssemblyLinearVelocity = Vector3.new(0, -20, 0)
         task.wait(1)
         
-        -- 2. WAIT FOR RACE START (Interruptible Wait)
+        -- 2. WAIT FOR RACE START
         print("⏳ Waiting 20 seconds for race to start...")
         for i = 1, 40 do
-            if not _G.AutoFarmRunning then return end -- KILLS SCRIPT INSTANTLY IF TOGGLED OFF
+            if not _G.AutoFarmRunning then return end 
             task.wait(0.5)
         end
+
+        -- ==========================================
+        -- CRITICAL FIX: RE-FIND THE CAR AFTER TELEPORT
+        -- ==========================================
+        myCar = findMyCar()
+        if not myCar then
+            warn("❌ Car lost after teleport! Retrying loop...")
+            task.wait(2)
+            continue
+        end
+        driveSeat = myCar:FindFirstChild("DriveSeat")
+        -- ==========================================
 
         -- 3. HUNT FOR CHECKPOINTS
         local world = workspace:FindFirstChild("Around The World")
         local checkpoints = world and world:FindFirstChild("Checkpoints")
         
-        -- Wait up to 5 extra seconds for checkpoints to load if server is laggy
         if not checkpoints or #checkpoints:GetChildren() == 0 then
             print("🔍 Hunting for checkpoints...")
             for i = 1, 10 do
@@ -63,17 +74,26 @@ while _G.AutoFarmRunning do
             print("🏁 Race found! Running laps...")
             for lap = 1, 2 do
                 for i = 1, 29 do
-                    -- KILLS SCRIPT INSTANTLY IF TOGGLED OFF MID-RACE
                     if not _G.AutoFarmRunning then 
                         if driveSeat then driveSeat.Anchored = false end
-                        print("🛑 Autofarm Stopped by User.")
+                        print("🛑 Autofarm Stopped.")
                         return 
                     end
                     
                     local target = checkpoints:FindFirstChild("Checkpoint" .. i)
                     if target then
                         driveSeat.Anchored = true
-                        myCar:PivotTo(target.CFrame)
+                        local startP = myCar:GetPivot()
+                        
+                        -- Stealth Slide 
+                        for s = 1, 15 do
+                            myCar:PivotTo(startP:Lerp(target.CFrame, s/15))
+                            task.wait(0.02)
+                        end
+                        
+                        -- The Drop
+                        driveSeat.Anchored = false
+                        driveSeat.AssemblyLinearVelocity = Vector3.new(0, -12, 0)
                         task.wait(2.1)
                     else
                         warn("❌ Checkpoint " .. i .. " missing!")
@@ -82,13 +102,12 @@ while _G.AutoFarmRunning do
             end
             print("💰 Race complete. Cooling down for 25s...")
             
-            -- INTERRUPTIBLE COOLDOWN
             for i = 1, 50 do
                 if not _G.AutoFarmRunning then return end
                 task.wait(0.5)
             end
         else
-            warn("❌ Failed to find active checkpoints. Resetting loop.")
+            warn("❌ Failed to find active checkpoints.")
             task.wait(5)
         end
     end
