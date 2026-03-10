@@ -1,0 +1,93 @@
+local Player = game.Players.LocalPlayer
+local Character = Player.Character
+local platformPos = Vector3.new(-1127.35, 1.5, -4202.63)
+
+print("🔄 AUTO-FARMER: V7 (20s Initial Wait) ...")
+
+local function findMyCar()
+    for _, car in pairs(workspace.SpawnedCars:GetChildren()) do
+        local seat = car:FindFirstChild("DriveSeat")
+        if seat and seat.Occupant and seat.Occupant.Parent == Character then
+            return car
+        end
+    end
+    return nil
+end
+
+while true do
+    local myCar = findMyCar()
+
+    if myCar then
+        local driveSeat = myCar:FindFirstChild("DriveSeat")
+        
+        -- 1. JOIN LOBBY
+        print("📍 Joining platform...")
+        driveSeat.Anchored = true
+        myCar:PivotTo(CFrame.new(platformPos))
+        task.wait(0.5)
+        
+        -- 2. TRIGGER COUNTDOWN
+        driveSeat.Anchored = false
+        driveSeat.AssemblyLinearVelocity = Vector3.new(0, -20, 0)
+        driveSeat.Throttle = 1
+        task.wait(0.5)
+        driveSeat.Throttle = 0
+        
+        -- 3. THE UPDATED WAIT (20 SECONDS)
+        -- This covers the 10s countdown + loading time + TP time
+        print("⏳ Waiting for race start (20s)...")
+        task.wait(20) 
+
+        -- 4. SEARCH FOR DATA
+        local checkpoints = nil
+        print("🔍 Searching for race data...")
+        
+        for i = 1, 20 do 
+            myCar = findMyCar()
+            checkpoints = workspace:FindFirstChild("Around The World") and workspace["Around The World"]:FindFirstChild("Checkpoints")
+            
+            -- Check if checkpoints actually have children (parts) inside
+            if myCar and checkpoints and #checkpoints:GetChildren() > 0 then
+                print("✅ Race Data Found! Starting Laps...")
+                break
+            end
+            task.wait(0.5)
+        end
+        
+        if myCar and checkpoints then
+            driveSeat = myCar:FindFirstChild("DriveSeat")
+            
+            for lap = 1, 2 do
+                for i = 1, 29 do
+                    local target = checkpoints:FindFirstChild("Checkpoint" .. i)
+                    if target then
+                        driveSeat.Anchored = true
+                        local startP = myCar:GetPivot()
+                        
+                        -- Stealth Slide
+                        for s = 1, 15 do
+                            myCar:PivotTo(startP:Lerp(target.CFrame, s/15))
+                            task.wait(0.02)
+                        end
+                        
+                        -- Drop
+                        driveSeat.Anchored = false
+                        driveSeat.AssemblyLinearVelocity = Vector3.new(0, -12, 0)
+                        task.wait(2.1)
+                    end
+                end
+            end
+            print("💰 Race Finished.")
+        else
+            warn("❌ ERROR: Could not find race track. Check F9 for details.")
+        end
+        
+        -- 5. RESET DELAY
+        -- Gives the game time to move you out of the finish line
+        print("♻️ Resetting for next run...")
+        task.wait(20) 
+    else
+        warn("⚠️ Not in a car!")
+        task.wait(5)
+    end
+end
