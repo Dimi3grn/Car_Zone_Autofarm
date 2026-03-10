@@ -1,79 +1,71 @@
--- [[ FIXED AROUND THE WORLD MODULE V3 ]] --
+-- [[ AROUND THE WORLD MODULE - V7 ADAPTED ]] --
 local Player = game.Players.LocalPlayer
 local Character = Player.Character
 local platformPos = Vector3.new(-1127.35, 1.5, -4202.63)
 
+print("🔄 AUTO-FARMER: V7 GUI Edition...")
+
 local function findMyCar()
-    local carFolder = workspace:FindFirstChild("SpawnedCars")
-    if not carFolder then return nil end
-    for _, car in pairs(carFolder:GetChildren()) do
+    for _, car in pairs(workspace.SpawnedCars:GetChildren()) do
         local seat = car:FindFirstChild("DriveSeat")
-        if seat and seat.Occupant and seat.Occupant.Parent == Character then 
-            return car 
+        if seat and seat.Occupant and seat.Occupant.Parent == Character then
+            return car
         end
     end
     return nil
 end
 
-print("🚀 Autofarm Module Started!")
-
 while _G.AutoFarmRunning do
     local myCar = findMyCar()
-    
-    if not myCar then 
-        print("⏳ Waiting for car...")
-        task.wait(2)
-    else
+
+    if myCar then
         local driveSeat = myCar:FindFirstChild("DriveSeat")
-        if not driveSeat then task.wait(1) continue end
         
         -- 1. JOIN LOBBY
-        print("📍 Teleporting to lobby platform...")
+        print("📍 Joining platform...")
         driveSeat.Anchored = true
         myCar:PivotTo(CFrame.new(platformPos))
         task.wait(0.5)
+        
+        -- 2. TRIGGER COUNTDOWN
         driveSeat.Anchored = false
         driveSeat.AssemblyLinearVelocity = Vector3.new(0, -20, 0)
-        task.wait(1)
+        driveSeat.Throttle = 1
+        task.wait(0.5)
+        driveSeat.Throttle = 0
         
-        -- 2. WAIT FOR RACE START
-        print("⏳ Waiting 20 seconds for race to start...")
+        -- 3. THE UPDATED WAIT (20 SECONDS)
+        print("⏳ Waiting for race start (20s)...")
         for i = 1, 40 do
-            if not _G.AutoFarmRunning then return end 
+            if not _G.AutoFarmRunning then return end -- Kills loop if button turned OFF
             task.wait(0.5)
         end
 
-        -- ==========================================
-        -- CRITICAL FIX: RE-FIND THE CAR AFTER TELEPORT
-        -- ==========================================
-        myCar = findMyCar()
-        if not myCar then
-            warn("❌ Car lost after teleport! Retrying loop...")
-            task.wait(2)
-            continue
-        end
-        driveSeat = myCar:FindFirstChild("DriveSeat")
-        -- ==========================================
-
-        -- 3. HUNT FOR CHECKPOINTS
-        local world = workspace:FindFirstChild("Around The World")
-        local checkpoints = world and world:FindFirstChild("Checkpoints")
+        -- 4. SEARCH FOR DATA (The V7 Method)
+        local checkpoints = nil
+        print("🔍 Searching for race data...")
         
-        if not checkpoints or #checkpoints:GetChildren() == 0 then
-            print("🔍 Hunting for checkpoints...")
-            for i = 1, 10 do
-                if not _G.AutoFarmRunning then return end
-                world = workspace:FindFirstChild("Around The World")
-                checkpoints = world and world:FindFirstChild("Checkpoints")
-                if checkpoints and #checkpoints:GetChildren() > 0 then break end
-                task.wait(0.5)
+        for i = 1, 20 do 
+            if not _G.AutoFarmRunning then return end
+            
+            -- Keep searching for BOTH the new car and the checkpoints
+            myCar = findMyCar()
+            checkpoints = workspace:FindFirstChild("Around The World") and workspace["Around The World"]:FindFirstChild("Checkpoints")
+            
+            if myCar and checkpoints and #checkpoints:GetChildren() > 0 then
+                print("✅ Race Data Found! Starting Laps...")
+                break
             end
+            task.wait(0.5)
         end
-
-        if checkpoints and #checkpoints:GetChildren() > 0 then
-            print("🏁 Race found! Running laps...")
+        
+        if myCar and checkpoints then
+            -- CRITICAL: Re-assign the drive seat to the NEW car that spawned on the track
+            driveSeat = myCar:FindFirstChild("DriveSeat")
+            
             for lap = 1, 2 do
                 for i = 1, 29 do
+                    -- Stop instantly if user clicks "OFF" mid-race
                     if not _G.AutoFarmRunning then 
                         if driveSeat then driveSeat.Anchored = false end
                         print("🛑 Autofarm Stopped.")
@@ -85,31 +77,33 @@ while _G.AutoFarmRunning do
                         driveSeat.Anchored = true
                         local startP = myCar:GetPivot()
                         
-                        -- Stealth Slide 
+                        -- Stealth Slide
                         for s = 1, 15 do
                             myCar:PivotTo(startP:Lerp(target.CFrame, s/15))
                             task.wait(0.02)
                         end
                         
-                        -- The Drop
+                        -- Drop
                         driveSeat.Anchored = false
                         driveSeat.AssemblyLinearVelocity = Vector3.new(0, -12, 0)
                         task.wait(2.1)
-                    else
-                        warn("❌ Checkpoint " .. i .. " missing!")
                     end
                 end
             end
-            print("💰 Race complete. Cooling down for 25s...")
-            
-            for i = 1, 50 do
-                if not _G.AutoFarmRunning then return end
-                task.wait(0.5)
-            end
+            print("💰 Race Finished.")
         else
-            warn("❌ Failed to find active checkpoints.")
-            task.wait(5)
+            warn("❌ ERROR: Could not find race track. Check F9 for details.")
         end
+        
+        -- 5. RESET DELAY
+        print("♻️ Resetting for next run...")
+        for i = 1, 40 do
+            if not _G.AutoFarmRunning then return end
+            task.wait(0.5)
+        end
+    else
+        warn("⚠️ Not in a car!")
+        task.wait(5)
     end
 end
 print("🛑 Module Execution Ended.")
